@@ -5,3 +5,12 @@ date: "2022-10-02"
 output: github_document
 ---
 
+# load the package
+```{r}
+library(tidyverse)
+library(readxl)
+```
+
+
+
+
