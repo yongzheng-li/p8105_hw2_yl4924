@@ -33,12 +33,14 @@ nyc_transit_data <- read_csv("./data/NYC_Transit_Subway_Entrance_And_Exit_Data.c
 # Problem 2
 
 ### Read and clean the Mr. Trash Wheel sheet
+Variable 'year' in Mr. Trash Wheel is character variable. I decide to convert year to numerical variable.
 ```{r}
 mr_trash <- read_excel("./data/Trash Wheel Collection Data.xlsx", range = "A2:N549", sheet = "Mr. Trash Wheel" ) %>% 
             janitor::clean_names() %>% 
             mutate(
               sports_balls = round(sports_balls),
-              sports_balls = as.integer(sports_balls))
+              sports_balls = as.integer(sports_balls),
+              year = as.numeric(year))
 ```
 
 
@@ -55,13 +57,18 @@ professor_trash <- read_excel("./data/Trash Wheel Collection Data.xlsx", range =
 
 
 ### add additional variable 'trash_wheel_type'
-after view the two datasets, I decide to use binding to combine mr. trash wheel and professor_trash wheel. Since both datasets have variable 'dumpster', I decide to create variable 'trash_wheel_type' to seperate them.
+After view the two datasets, I decide to use binding to combine mr. trash wheel and professor_trash wheel. Since both datasets have variable 'dumpster', I decide to create variable 'trash_wheel_type' to seperate them.
 ```{r}
 mr_trash <- mutate(mr_trash, trash_wheel_type = "Mr")
 professor_trash <- mutate(professor_trash, trash_wheel_type = "Professor")
 ```
 
 ### combine two dataset
+```{r}
+trash_tidy <- bind_rows(mr_trash, professor_trash)
+```
+
+The combined dataset contain `r nrow(trash_tidy)` rows and `r ncol(trash_tidy)` columns. Among 15 columns, the key variables are weight in tons and volume in cubic yards. The mean weight of trash collect of the combined data is `r mean(trash_tidy$weight_tons)` tons. The mean volume of trash collect of the combined data is `r mean(trash_tidy$volume_cubic_yards)`.  The total weight of trash collected by Professor Trash Wheel = `r sum(professor_trash$weight_tons)`. The total number of sports balls collected by Mr. Trash Wheel in 2020 = `r filter(mr_trash, year == 2020) %>% {sum(.$sports_balls)}`
 
 
 
