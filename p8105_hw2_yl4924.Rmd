@@ -14,3 +14,19 @@ library(readxl)
 
 
 
+#Problem 1
+
+### import and clean the data
+
+```{r}
+nyc_transit_data <- read_csv("./data/NYC_Transit_Subway_Entrance_And_Exit_Data.csv",  
+                    col_types = cols(Route8 = "c", Route9 = "c", Route10 = "c", Route11 = "c")) %>% 
+                    janitor::clean_names() %>%
+                    select(line, station_name, station_latitude, station_longitude, 
+                           starts_with("routes"), entry, vending, entrance_type,ada) %>% 
+                    mutate(ifelse(entry == "Yes", TRUE, FALSE))
+                    
+```
+
+
+
