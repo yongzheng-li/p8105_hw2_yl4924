@@ -14,7 +14,7 @@ library(readxl)
 
 
 
-#Problem 1
+# Problem 1
 
 ### import and clean the data
 
@@ -27,6 +27,43 @@ nyc_transit_data <- read_csv("./data/NYC_Transit_Subway_Entrance_And_Exit_Data.c
                     mutate(ifelse(entry == "Yes", TRUE, FALSE))
                     
 ```
+
+
+
+# Problem 2
+
+### Read and clean the Mr. Trash Wheel sheet
+```{r}
+mr_trash <- read_excel("./data/Trash Wheel Collection Data.xlsx", range = "A2:N549", sheet = "Mr. Trash Wheel" ) %>% 
+            janitor::clean_names() %>% 
+            mutate(
+              sports_balls = round(sports_balls),
+              sports_balls = as.integer(sports_balls))
+```
+
+
+### Read and clean the Professor Trash Wheel sheet
+```{r}
+professor_trash <- read_excel("./data/Trash Wheel Collection Data.xlsx", range = "A2:M96", sheet = "Professor Trash Wheel") %>% 
+                   janitor::clean_names() %>% 
+                   mutate(
+                     sports_balls = 0,
+                     sports_balls = as.integer(sports_balls)) %>% 
+                   relocate(sports_balls, .after = chip_bags)
+                   
+```
+
+
+### add additional variable 'trash_wheel_type'
+after view the two datasets, I decide to use binding to combine mr. trash wheel and professor_trash wheel. Since both datasets have variable 'dumpster', I decide to create variable 'trash_wheel_type' to seperate them.
+```{r}
+mr_trash <- mutate(mr_trash, trash_wheel_type = "Mr")
+professor_trash <- mutate(professor_trash, trash_wheel_type = "Professor")
+```
+
+### combine two dataset
+
+
 
 
 
