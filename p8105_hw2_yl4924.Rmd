@@ -1,7 +1,7 @@
 ---
 title: "p8105_hw2_yl4924"
 author: "Yongzheng Li"
-date: "2022-10-02"
+date: "2022-10-05"
 output: github_document
 ---
 
@@ -19,16 +19,69 @@ library(readxl)
 ### import and clean the data
 
 ```{r}
-nyc_transit_data <- read_csv("./data/NYC_Transit_Subway_Entrance_And_Exit_Data.csv",  
-                    col_types = cols(Route8 = "c", Route9 = "c", Route10 = "c", Route11 = "c")) %>% 
-                    janitor::clean_names() %>%
-                    select(line, station_name, station_latitude, station_longitude, 
-                           starts_with("routes"), entry, vending, entrance_type,ada) %>% 
-                    mutate(ifelse(entry == "Yes", TRUE, FALSE))
+trans_ent = 
+  read_csv(
+    "data/NYC_Transit_Subway_Entrance_And_Exit_Data.csv",
+    col_types = cols(Route8 = "c", Route9 = "c", Route10 = "c", Route11 = "c")) %>% 
+  janitor::clean_names() %>% 
+  select(
+    line, station_name, station_latitude, station_longitude, 
+    starts_with("route"), entry, exit_only, vending, entrance_type, 
+    ada) %>% 
+  mutate(entry = ifelse(entry == "YES", TRUE, FALSE))
                     
 ```
 
+The dataset contain 1868 rows and 9 cols. the dataset contain line, station_name, station_latitude, station_lonitude, entry, vending, entrance_type, and ada. For the data cleaning step, I convert from route8 to rounte11 to become character variable. Then I clean the name to be the same. I convert entry variable from char to logic. The data are not tidy since there are multiple variables named from route1 to route 11. We should transform these variable from wide to long format to make it tidy.
 
+### distinct station
+
+```{r}
+trans_ent %>% 
+  select(station_name, line) %>% 
+  distinct()
+```
+there are total of 465 distinct station. 
+
+### stations are ADA compliant
+```{r}
+trans_ent %>% 
+  filter(ada == TRUE) %>% 
+  select(station_name, line) %>% 
+  distinct
+```
+from the dataframe, there are total 84 stations are ADA compliant.
+
+### proportion of station entrances / exits without vending allow entrance
+```{r}
+trans_ent %>% 
+  filter(vending == "NO") %>% 
+  pull(entry) %>% 
+  mean
+```
+the proportion of station entrances/ exists without vending allow entrance = 0.3770492
+
+### distinct stations serve the A train
+```{r}
+trans_ent %>% 
+  pivot_longer(
+    route1:route11,
+    names_to = "route_num",
+    values_to = "route") %>% 
+  filter(route == "A") %>% 
+  select(station_name, line) %>% 
+  distinct
+
+trans_ent %>% 
+  pivot_longer(
+    route1:route11,
+    names_to = "route_num",
+    values_to = "route") %>% 
+  filter(route == "A", ada == TRUE) %>% 
+  select(station_name, line) %>% 
+  distinct
+```
+there are 60 stations serve the A train. Of the stations that serve the A train, 17 are ADA compliant
 
 # Problem 2
 
@@ -66,6 +119,7 @@ professor_trash <- mutate(professor_trash, trash_wheel_type = "Professor")
 ### combine two dataset
 ```{r}
 trash_tidy <- bind_rows(mr_trash, professor_trash)
+head(trash_tidy)
 ```
 
 The combined dataset contain `r nrow(trash_tidy)` rows and `r ncol(trash_tidy)` columns. Among 15 columns, the key variables are weight in tons and volume in cubic yards. The mean weight of trash collect of the combined data is `r mean(trash_tidy$weight_tons)` tons. The mean volume of trash collect of the combined data is `r mean(trash_tidy$volume_cubic_yards)` cubic yards. The total weight of trash collected by Professor Trash Wheel = `r sum(professor_trash$weight_tons)` tons. The total number of sports balls collected by Mr. Trash Wheel in 2020 is `r filter(mr_trash, year == 2020) %>% {sum(.$sports_balls)}`.
@@ -88,8 +142,7 @@ pols_month <- read_csv("./data/pols-month.csv") %>%
                 cols = c(prez_gop, prez_dem),
                 names_to = NULL,
                 values_to = "president") %>% 
-              select(-contains("prez")) %>% 
-              select(-day) %>% 
+              select(-contains("prez"), -day) %>% 
               distinct()
               
 ```
@@ -113,13 +166,17 @@ snp <- read_csv("./data/snp.csv") %>%
          
          year = case_when(year_before_2001 == 0 ~ 2000+year,
                           year_before_2001 > 0 ~ 0+year_before_2001)) %>% 
-      select(-c(day,year_before_2001))
+      select(-day,-year_before_2001)
 head(snp)
 ```
 I noticed the date in years after 2001(yyyy/mm/dd) is different from date in years before 2001(mm/dd/yy). 
+
 I decide to create a new variable 'year_before_2001' used to seperate years before 2001 and after 2001. 
+
 Then I mutate month for years before 2001(from mm/dd/yy to mm/mm/yy since we do not need day so I just override it) 
+
 Next, I mutate years for years before 2001 based on the variable 'year_before_2001' (from mm/mm/yy to yyyy/mm/yy) and change years to 4 digit for years after 2001.
+
 Finally, I drop the variable 'day' and variable 'year_before_2001' to keep the columns I need.
 
 ###  tidy the unemployment data
