@@ -57,7 +57,7 @@ professor_trash <- read_excel("./data/Trash Wheel Collection Data.xlsx", range =
 
 
 ### add additional variable 'trash_wheel_type'
-After view the two datasets, I decide to use binding to combine mr. trash wheel and professor_trash wheel. Since both datasets have variable 'dumpster', I decide to create variable 'trash_wheel_type' to seperate them.
+After view the two datasets, I decide to use binding to combine mr. trash wheel and professor_trash wheel. Since both datasets have variable 'dumpster', I decide to create variable 'trash_wheel_type' as the identity variable.
 ```{r}
 mr_trash <- mutate(mr_trash, trash_wheel_type = "Mr")
 professor_trash <- mutate(professor_trash, trash_wheel_type = "Professor")
@@ -68,7 +68,84 @@ professor_trash <- mutate(professor_trash, trash_wheel_type = "Professor")
 trash_tidy <- bind_rows(mr_trash, professor_trash)
 ```
 
-The combined dataset contain `r nrow(trash_tidy)` rows and `r ncol(trash_tidy)` columns. Among 15 columns, the key variables are weight in tons and volume in cubic yards. The mean weight of trash collect of the combined data is `r mean(trash_tidy$weight_tons)` tons. The mean volume of trash collect of the combined data is `r mean(trash_tidy$volume_cubic_yards)`.  The total weight of trash collected by Professor Trash Wheel = `r sum(professor_trash$weight_tons)`. The total number of sports balls collected by Mr. Trash Wheel in 2020 = `r filter(mr_trash, year == 2020) %>% {sum(.$sports_balls)}`
+The combined dataset contain `r nrow(trash_tidy)` rows and `r ncol(trash_tidy)` columns. Among 15 columns, the key variables are weight in tons and volume in cubic yards. The mean weight of trash collect of the combined data is `r mean(trash_tidy$weight_tons)` tons. The mean volume of trash collect of the combined data is `r mean(trash_tidy$volume_cubic_yards)` cubic yards. The total weight of trash collected by Professor Trash Wheel = `r sum(professor_trash$weight_tons)` tons. The total number of sports balls collected by Mr. Trash Wheel in 2020 is `r filter(mr_trash, year == 2020) %>% {sum(.$sports_balls)}`.
+
+
+# Problem 3
+
+### read and clean the data of pols-month.csv
+```{r}
+pols_month <- read_csv("./data/pols-month.csv") %>% 
+              janitor::clean_names() %>% 
+              separate(mon, into = c("year", "month", "day"), sep = "-") %>% 
+              mutate(
+                year = as.integer(year),
+                month = month.abb[as.integer(month)],
+                day = as.integer(day),
+                prez_gop = recode(prez_gop, `1` = "gop", `0` = "dem", `2` = "otherwise" ),
+                prez_dem = recode(prez_dem, `1` = "dem", `0` = "gop")) %>% 
+              pivot_longer(
+                cols = c(prez_gop, prez_dem),
+                names_to = NULL,
+                values_to = "president") %>% 
+              select(-contains("prez")) %>% 
+              select(-day) %>% 
+              distinct()
+              
+```
+
+### read and clean the data of snp.csv
+```{r}
+snp <- read_csv("./data/snp.csv") %>%
+       janitor::clean_names() %>% 
+       separate(date, into = c("year", "month", "day"), sep = "/") %>% 
+       mutate(
+         year = as.integer(year),
+         day = as.integer(day),
+         month = as.integer(month),
+         year_before_2001 = case_when(50 <= day & day <= 99 ~ 1900+day,
+                                      day == 0 ~2000+day,
+                                      1 <= day & day <= 49 ~ 0),
+         
+         month = case_when(year_before_2001 > 0 ~ year+0,
+                           year_before_2001 == 0 ~ month+0),
+         month = month.abb[month],
+         
+         year = case_when(year_before_2001 == 0 ~ 2000+year,
+                          year_before_2001 > 0 ~ 0+year_before_2001)) %>% 
+      select(-c(day,year_before_2001))
+head(snp)
+```
+I noticed the date in years after 2001(yyyy/mm/dd) is different from date in years before 2001(mm/dd/yy). 
+I decide to create a new variable 'year_before_2001' used to seperate years before 2001 and after 2001. 
+Then I mutate month for years before 2001(from mm/dd/yy to mm/mm/yy since we do not need day so I just override it) 
+Next, I mutate years for years before 2001 based on the variable 'year_before_2001' (from mm/mm/yy to yyyy/mm/yy) and change years to 4 digit for years after 2001.
+Finally, I drop the variable 'day' and variable 'year_before_2001' to keep the columns I need.
+
+###  tidy the unemployment data
+```{r}
+unemployment <- read_csv("./data/unemployment.csv") %>% 
+                pivot_longer(
+                  cols = Jan:Dec,
+                  names_to = "month",
+                  values_to = "percentage") %>% 
+                janitor::clean_names()
+```
+
+### join the dataset
+```{r}
+fte_data <- left_join(pols_month, snp, by = c("year", "month") ) %>% 
+left_join(unemployment, by = c("year", "month"))
+head(fte_data)
+```
+
+
+the data pols_month contain the number of national politicians who are democratic or republican from 1947 to 2015. Data snp contain information of closing value of stock market index from 1950 to `r max(snp$year)`. Data unemployment contain the information of percent of unemployment from `r min(unemployment$year)` to `r max(unemployment$year)`. The combined data fte_data contain `r nrow(fte_data)` rows and `r ncol(fte_data)` columns. the range of years is from 1947 to 2015. The key variables is president, close, and percentage.
+
+
+
+
+
 
 
 
